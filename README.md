@@ -46,3 +46,6 @@ Sistem dışarıya açık aşağıdaki API uç noktalarını sunmaktadır:
 **Geliştirici:** Harun Arslan
 
 <img width="1894" height="756" alt="Ekran görüntüsü 2026-08-18 105747" src="https://github.com/user-attachments/assets/c1ed7135-1886-4bcc-8377-59ef461ca62b" />
+
+<img width="1729" height="800" alt="image" src="https://github.com/user-attachments/assets/fbd97ec0-b3cf-4df2-aced-bdb6ae5c3ec1" />
+
