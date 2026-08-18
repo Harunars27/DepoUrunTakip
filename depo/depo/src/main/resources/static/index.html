@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mad Med Depo Yönetimi</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .xo-logo {
+            color: #dc3545;
+            font-weight: 900;
+            font-size: 2.5rem;
+            font-family: 'Arial Black', sans-serif;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+        .brand-title {
+            font-weight: 700;
+            font-size: 2rem;
+            color: #333;
+            vertical-align: middle;
+        }
+        .category-header {
+            background-color: #343a40;
+            color: white;
+            padding: 8px 15px;
+            border-radius: 5px;
+            margin-top: 20px;
+            margin-bottom: 0;
+            font-size: 1.1rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body class="bg-light">
+
+<div class="container mt-4 mb-5">
+    <!-- Header / Logo Alanı -->
+    <div class="text-center mb-4">
+        <span class="xo-logo">Xo</span> <span class="brand-title">Mad Med Depo</span>
+    </div>
+
+    <div class="row">
+        <!-- Ürün Ekleme Formu -->
+        <div class="col-md-4 mb-4">
+            <div class="card shadow-sm border-0 sticky-top" style="top: 20px;">
+                <div class="card-body">
+                    <h5 class="card-title fw-bold text-secondary">Yeni Malzeme Tanımla</h5>
+                    <hr>
+                    <div class="mb-3">
+                        <label class="form-label text-muted small fw-bold">Malzeme Adı</label>
+                        <input type="text" id="urunAd" class="form-control" placeholder="Örn: Kokteyl Peçetesi">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-muted small fw-bold">Kategori</label>
+                        <select id="kategori" class="form-select">
+                            <option value="Sarf Malzeme">Sarf Malzeme</option>
+                            <option value="Züccaciye">Züccaciye</option>
+                            <option value="Ambalaj">Ambalaj</option>
+                            <option value="Temizlik">Temizlik</option>
+                            <option value="Gıda & İçecek">Gıda & İçecek</option>
+                            <option value="Alkollü İçecek">Alkollü İçecek</option>
+                            <option value="Şurup & Püre">Şurup & Püre</option>
+                            <option value="Bar Sarf">Bar Sarf</option>
+                            <option value="Bar Ekipman">Bar Ekipman</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-muted small fw-bold">Birim</label>
+                        <select id="birim" class="form-select">
+                            <option value="Adet">Adet</option>
+                            <option value="Kutu">Kutu</option>
+                            <option value="Koli">Koli</option>
+                            <option value="Paket">Paket</option>
+                            <option value="Rulo">Rulo</option>
+                            <option value="Litre">Litre</option>
+                            <option value="Şişe">Şişe</option>
+                            <option value="Fıçı">Fıçı</option>
+                            <option value="Kg">Kg</option>
+                            <option value="Teneke">Teneke</option>
+                            <option value="Kasa">Kasa</option>
+                        </select>
+                    </div>
+                    <div class="mb-4">
+                        <label class="form-label text-muted small fw-bold">Başlangıç Stoku</label>
+                        <input type="number" id="baslangicStok" class="form-control" value="0" min="0">
+                    </div>
+                    <button class="btn btn-danger w-100 fw-bold shadow-sm" onclick="urunEkle()">Sisteme Ekle</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Kategorilere Ayrılmış Ürünler Listesi -->
+        <div class="col-md-8">
+            <div class="card shadow-sm border-0">
+                <div class="card-body" style="min-height: 500px;">
+                    <h5 class="card-title fw-bold text-secondary mb-3">Depo Envanteri</h5>
+
+                    <div id="kategoriliListeler">
+                        <div class="text-center text-muted mt-5">Yükleniyor...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        urunleriGetir();
+    });
+
+    // 1. Tüm Ürünleri Getirme ve Kategorilere Ayırma
+    function urunleriGetir() {
+        fetch('/api/stok/urunler')
+            .then(response => response.json())
+            .then(data => {
+                const listeAlani = document.getElementById('kategoriliListeler');
+                listeAlani.innerHTML = '';
+
+                if (data.length === 0) {
+                    listeAlani.innerHTML = '<div class="alert alert-info">Depoda henüz kayıtlı ürün bulunmamaktadır.</div>';
+                    return;
+                }
+
+                // Ürünleri kategorilerine göre grupla
+                const grupluUrunler = data.reduce((acc, urun) => {
+                    acc[urun.kategori] = acc[urun.kategori] || [];
+                    acc[urun.kategori].push(urun);
+                    return acc;
+                }, {});
+
+                for (const [kategoriAdi, urunler] of Object.entries(grupluUrunler)) {
+                    let tabloHTML = `
+                        <h6 class="category-header">${kategoriAdi}</h6>
+                        <div class="table-responsive mb-4 shadow-sm">
+                            <table class="table table-hover align-middle mb-0" style="border: 1px solid #dee2e6;">
+                                <thead class="table-light text-muted small">
+                                    <tr>
+                                        <th style="width: 45%">Ürün Adı</th>
+                                        <th style="width: 15%">Birim</th>
+                                        <th style="width: 15%" class="text-center">Stok</th>
+                                        <th style="width: 25%" class="text-end pe-3">İşlemler</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                    `;
+
+                    urunler.forEach(urun => {
+                        const stokRengi = urun.mevcutStok > 0 ? 'bg-success' : 'bg-danger';
+
+                        tabloHTML += `
+                            <tr>
+                                <td class="fw-bold text-dark">${urun.ad}</td>
+                                <td class="text-muted small">${urun.birim}</td>
+                                <td class="text-center"><span class="badge ${stokRengi} fs-6 px-3 py-2 rounded-pill">${urun.mevcutStok}</span></td>
+                                <td class="text-end pe-2">
+                                    <button class="btn btn-sm btn-outline-success fw-bold" title="Stok Ekle (+)" onclick="stokHareketi(${urun.id}, 'GIRIS')">&nbsp;+&nbsp;</button>
+                                    <button class="btn btn-sm btn-outline-danger fw-bold ms-1" title="Stok Düş (-)" onclick="stokHareketi(${urun.id}, 'CIKIS')">&nbsp;-&nbsp;</button>
+                                    <button class="btn btn-sm btn-danger fw-bold ms-2" title="Ürünü Tamamen Sil" onclick="urunSil(${urun.id})">&nbsp;X&nbsp;</button>
+                                </td>
+                            </tr>
+                        `;
+                    });
+
+                    tabloHTML += `</tbody></table></div>`;
+                    listeAlani.innerHTML += tabloHTML;
+                }
+            })
+            .catch(error => {
+                document.getElementById('kategoriliListeler').innerHTML = '<div class="alert alert-danger">Veriler yüklenemedi! Java uygulamasının çalıştığından emin olun.</div>';
+            });
+    }
+
+    // 2. Yeni Ürün Ekleme
+    function urunEkle() {
+        const ad = document.getElementById('urunAd').value;
+        const kategori = document.getElementById('kategori').value;
+        const birim = document.getElementById('birim').value;
+        const stok = document.getElementById('baslangicStok').value;
+
+        if(!ad) {
+            alert("Lütfen malzeme adı giriniz!");
+            return;
+        }
+
+        const yeniUrun = {
+            ad: ad,
+            kategori: kategori,
+            birim: birim,
+            mevcutStok: parseInt(stok) || 0
+        };
+
+        fetch('/api/stok/urun-ekle', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(yeniUrun)
+        })
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('urunAd').value = '';
+            document.getElementById('baslangicStok').value = '0';
+            document.getElementById('urunAd').focus();
+            urunleriGetir();
+        })
+        .catch(error => alert("Ürün eklenirken bir hata oluştu!"));
+    }
+
+    // 3. Stok Hareketi (+ / - Butonları)
+    function stokHareketi(urunId, islemTipi) {
+        const islemMetni = islemTipi === 'GIRIS' ? 'Eklenecek Miktar (GİRİŞ):' : 'Düşülecek Miktar (ÇIKIŞ):';
+        const miktar = prompt(islemMetni);
+
+        if (miktar === null || miktar.trim() === '' || isNaN(miktar) || parseInt(miktar) <= 0) {
+            return;
+        }
+
+        const params = new URLSearchParams();
+        params.append('productId', urunId);
+        params.append('islemTipi', islemTipi);
+        params.append('miktar', parseInt(miktar));
+
+        fetch('/api/stok/hareket', {
+            method: 'POST',
+            body: params
+        })
+        .then(async response => {
+            if (!response.ok) {
+                const text = await response.text();
+                throw new Error(text || "Bir hata oluştu!");
+            }
+            return response.text();
+        })
+        .then(data => {
+            urunleriGetir();
+        })
+        .catch(error => {
+            alert("Hata: " + error.message);
+        });
+    }
+
+    // 4. Ürün Silme (Kırmızı X Butonu)
+    function urunSil(urunId) {
+        if(confirm("Bu ürünü depodan tamamen silmek istediğinize emin misiniz?")) {
+            fetch('/api/stok/sil/' + urunId, {
+                method: 'DELETE'
+            })
+            .then(response => {
+                if(response.ok) {
+                    urunleriGetir();
+                } else {
+                    alert("Silme işlemi başarısız! Java tarafında silme fonksiyonunun ekli olduğundan emin olun.");
+                }
+            })
+            .catch(error => alert("Hata: " + error));
+        }
+    }
+</script>
+
+</body>
+</html>
